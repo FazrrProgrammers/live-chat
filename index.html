@@ -3,176 +3,169 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Live Chat Publik (LocalStorage)</title>
+<title>Live Chat Mobile Friendly</title>
 <style>
   body {
     font-family: Arial, sans-serif;
-    max-width: 600px;
-    margin: 20px auto;
-    padding: 10px;
-    background: #f4f6f8;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+    max-width: 480px;
+    margin: 1rem auto;
+    padding: 1rem;
+    background: #f5f5f5;
+  }
+  h2 {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  #nameSection, #chatSection {
+    background: white;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
   }
   #chat {
-    border: 1px solid #ddd;
-    height: 350px;
-    padding: 10px;
+    height: 300px;
     overflow-y: auto;
-    background: #fff;
+    border: 1px solid #ddd;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
     border-radius: 6px;
-    margin-bottom: 10px;
+    background: #fff;
   }
-  .message {
-    margin-bottom: 8px;
-    padding: 6px 12px;
+  .msg {
+    margin-bottom: 0.7rem;
+    padding: 0.5rem 0.8rem;
     border-radius: 12px;
     max-width: 80%;
     word-wrap: break-word;
   }
-  .message.user {
+  .msg.me {
     background-color: #cce5ff;
-    align-self: flex-end;
+    margin-left: auto;
   }
-  .message.other {
-    background-color: #e2e3e5;
-    align-self: flex-start;
+  .msg.other {
+    background-color: #eee;
+    margin-right: auto;
   }
-  .message strong {
+  .msg strong {
     display: block;
-    font-size: 0.85em;
-    margin-bottom: 3px;
-    color: #333;
+    font-size: 0.85rem;
+    margin-bottom: 0.2rem;
   }
-  #inputForm, #nameForm {
+  form {
     display: flex;
-    gap: 10px;
+    gap: 0.5rem;
   }
-  input[type="text"] {
+  input[type=text] {
     flex: 1;
-    padding: 8px 12px;
-    font-size: 16px;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
     border-radius: 20px;
     border: 1px solid #ccc;
   }
   button {
-    padding: 8px 18px;
+    padding: 0 1rem;
     border: none;
-    background-color: #007bff;
+    background: #007bff;
     color: white;
+    font-size: 1rem;
     border-radius: 20px;
-    font-size: 16px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: background 0.3s;
   }
   button:hover {
-    background-color: #0056b3;
-  }
-  #chatContainer {
-    display: flex;
-    flex-direction: column;
+    background: #0056b3;
   }
 </style>
 </head>
 <body>
 
-<div id="nameContainer">
-  <h2>Masukkan Nama Anda</h2>
+<div id="nameSection">
+  <h2>Masukkan Nama Kamu</h2>
   <form id="nameForm">
-    <input type="text" id="nameInput" placeholder="Nama kamu..." autocomplete="off" required />
+    <input type="text" id="nameInput" placeholder="Nama..." autocomplete="off" required />
     <button type="submit">Mulai Chat</button>
   </form>
 </div>
 
-<div id="chatContainer" style="display:none;">
-  <h2>Live Chat Publik</h2>
+<div id="chatSection" style="display:none;">
+  <h2>Live Chat</h2>
   <div id="chat"></div>
-  <form id="inputForm">
-    <input type="text" id="inputMessage" placeholder="Ketik pesan..." autocomplete="off" required />
+  <form id="msgForm">
+    <input type="text" id="msgInput" placeholder="Ketik pesan..." autocomplete="off" required />
     <button type="submit">Kirim</button>
   </form>
 </div>
 
 <script>
-  const nameContainer = document.getElementById('nameContainer');
-  const chatContainer = document.getElementById('chatContainer');
+  const nameSection = document.getElementById('nameSection');
+  const chatSection = document.getElementById('chatSection');
   const nameForm = document.getElementById('nameForm');
   const nameInput = document.getElementById('nameInput');
-
   const chat = document.getElementById('chat');
-  const inputForm = document.getElementById('inputForm');
-  const inputMessage = document.getElementById('inputMessage');
+  const msgForm = document.getElementById('msgForm');
+  const msgInput = document.getElementById('msgInput');
 
-  // Simpan chat dan nama di localStorage
-  const STORAGE_KEY = 'public_live_chat_messages';
-  const STORAGE_NAME = 'public_live_chat_name';
+  // Local storage keys
+  const STORAGE_NAME = 'chat_name';
+  const STORAGE_MESSAGES = 'chat_messages';
 
-  // Load nama dari localStorage jika ada
   let userName = localStorage.getItem(STORAGE_NAME);
+  let messages = JSON.parse(localStorage.getItem(STORAGE_MESSAGES)) || [];
 
-  // Load chat messages dari localStorage (array of objects {name, text})
-  let messages = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-
-  function saveMessages() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-  }
-
-  function addMessageToDOM(msgObj) {
-    const div = document.createElement('div');
-    div.classList.add('message');
-    // Jika pengirim sama dengan userName, tampilkan beda style
-    if (msgObj.name === userName) {
-      div.classList.add('user');
-    } else {
-      div.classList.add('other');
-    }
-    div.innerHTML = `<strong>${escapeHTML(msgObj.name)}</strong>${escapeHTML(msgObj.text)}`;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-  }
-
-  // Escape HTML untuk keamanan
   function escapeHTML(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
   }
 
-  // Tampilkan semua pesan dari localStorage
   function renderMessages() {
     chat.innerHTML = '';
-    messages.forEach(addMessageToDOM);
+    for (const m of messages) {
+      addMessageToDOM(m);
+    }
+    chat.scrollTop = chat.scrollHeight;
   }
 
-  // Jika sudah ada nama tersimpan, langsung tampil chat
+  function addMessageToDOM(msg) {
+    const div = document.createElement('div');
+    div.classList.add('msg');
+    div.classList.add(msg.name === userName ? 'me' : 'other');
+    div.innerHTML = `<strong>${escapeHTML(msg.name)}</strong>${escapeHTML(msg.text)}`;
+    chat.appendChild(div);
+  }
+
+  function saveMessages() {
+    localStorage.setItem(STORAGE_MESSAGES, JSON.stringify(messages));
+  }
+
+  // Jika sudah ada nama, langsung tampil chat
   if (userName) {
-    nameContainer.style.display = 'none';
-    chatContainer.style.display = 'block';
+    nameSection.style.display = 'none';
+    chatSection.style.display = 'block';
     renderMessages();
   }
 
-  // Submit nama
-  nameForm.addEventListener('submit', (e) => {
+  nameForm.addEventListener('submit', e => {
     e.preventDefault();
     const name = nameInput.value.trim();
     if (!name) return alert('Nama harus diisi!');
     userName = name;
     localStorage.setItem(STORAGE_NAME, userName);
-    nameContainer.style.display = 'none';
-    chatContainer.style.display = 'block';
+    nameSection.style.display = 'none';
+    chatSection.style.display = 'block';
     renderMessages();
   });
 
-  // Submit pesan
-  inputForm.addEventListener('submit', (e) => {
+  msgForm.addEventListener('submit', e => {
     e.preventDefault();
-    const text = inputMessage.value.trim();
+    const text = msgInput.value.trim();
     if (!text) return;
-    const msgObj = { name: userName, text: text };
-    messages.push(msgObj);
+    const newMsg = { name: userName, text: text };
+    messages.push(newMsg);
     saveMessages();
-    addMessageToDOM(msgObj);
-    inputMessage.value = '';
+    addMessageToDOM(newMsg);
+    msgInput.value = '';
+    chat.scrollTop = chat.scrollHeight;
   });
 </script>
 
